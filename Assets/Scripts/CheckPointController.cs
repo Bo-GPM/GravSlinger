@@ -13,7 +13,7 @@ public class CheckPointController : MonoBehaviour
         {
             // checkPointActivated.Invoke();
             LevelManager.instance.ActivateCheckPoint(gameObject);
-            Debug.Log("CheckPoint Triggered");
+            // Debug.Log("CheckPoint Triggered");
         }
     }
     

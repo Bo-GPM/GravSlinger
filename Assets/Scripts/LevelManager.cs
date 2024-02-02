@@ -14,8 +14,8 @@ public class LevelManager : MonoBehaviour
 {
     [HideInInspector] public static LevelManager instance;
     [HideInInspector] public GameObject player;
-    [HideInInspector] public GameObject[] objectsToDestoryAfterDeath;
-    
+    [HideInInspector] public List<GameObject> objectsToDestoryAfterDeath = new List<GameObject>();
+    [HideInInspector] public PlayerController playerController;
     
     [Header("Debug")] 
     [SerializeField] private Text debugText;
@@ -40,6 +40,10 @@ public class LevelManager : MonoBehaviour
     private GameObject[] checkPointsArray;    //Call storeChildrenToArray() to initialize
     private int currentCheckpoint = 0;
 
+    [Header("Enemy")] 
+    [SerializeField] private GameObject enemySpawnerParent;
+    private GameObject[] enemySpawnerArray;
+        
     private void Awake()
     {
         instance = this;
@@ -56,6 +60,24 @@ public class LevelManager : MonoBehaviour
     {
         DebugFunctions();
         UpdateUIText();
+        DeathCheck();
+    }
+
+    private void DeathCheck()
+    {
+        if (playerCurrentHP <= 0)
+        {
+            if (playerCurrentLives <= 0)
+            {
+                // Reload scene to restart the game
+                Scene currentScene = SceneManager.GetActiveScene();
+                SceneManager.LoadScene(currentScene.name);
+            }
+            else
+            {
+                ResetGameToLastCheckPoint();
+            }
+        }
     }
 
     private void UpdateUIText()
@@ -73,6 +95,25 @@ public class LevelManager : MonoBehaviour
         outputText += $"Current Gold: {playerCurrentCoins}\n";
         
         debugText.text = outputText;
+        
+        // Some Hacks
+        // Press R to get go back to last checkpoint
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            ResetGameToLastCheckPoint();
+        }
+        
+        // Reload Scene (emulate perm death)
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            Scene currentScene = SceneManager.GetActiveScene();
+            SceneManager.LoadScene(currentScene.name);
+        }
+
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            playerController.abilityAwakenIndex++;
+        }
     }
 
     public void LevelInitialization()
@@ -89,18 +130,40 @@ public class LevelManager : MonoBehaviour
         
         // 2. Instantiate Player
         player = Instantiate(playerPrefab, checkPointsArray[currentCheckpoint].transform.position, quaternion.identity);
+        playerController = player.GetComponent<PlayerController>();
         
         // 3. Spawn enemies
-        
-
+        enemySpawnerArray = StoreAllChildrenToArray(enemySpawnerParent);
+        SpawnAllEnemies();
     }
-    public void ResetGameToCheckPoint()
+    public void ResetGameToLastCheckPoint()
     {
         // TODO: revert game to the last checkpoint state
         // Use currentCheckpoint var
+        player.transform.position = checkPointsArray[currentCheckpoint].transform.position;
+        player.GetComponent<Rigidbody2D>().velocity = Vector3.zero;
+        UpdateLife(-1);
+        playerCurrentHP = playerMaxHP;
+        UpdateHP(0);
+        
         // Destroy all enemies and bullets
+        foreach (GameObject tempObj in objectsToDestoryAfterDeath)
+        {
+            Destroy(tempObj);
+        }
+        objectsToDestoryAfterDeath.Clear();
+        
+        // Then respawn all of the enemies
+        SpawnAllEnemies();
     }
 
+    private void SpawnAllEnemies()
+    {
+        foreach (GameObject tempObj in enemySpawnerArray)
+        {
+            tempObj.GetComponent<EnemySpawner>().respawnObject();
+        }
+    }
     public void UpdateLife(int tempLife)
     {
         playerCurrentLives += tempLife;
@@ -114,10 +177,9 @@ public class LevelManager : MonoBehaviour
     public void AddCoins(int tempCoin)
     {
         playerCurrentCoins += tempCoin;
-        Debug.LogError($"Coins: {playerCurrentCoins}");
-        Debug.LogWarning($"Coin Event is triggered, tempCoin is: {tempCoin}, current Coins: {playerCurrentCoins}");
+        // Debug.LogError($"Coins: {playerCurrentCoins}");
+        // Debug.LogWarning($"Coin Event is triggered, tempCoin is: {tempCoin}, current Coins: {playerCurrentCoins}");
     }
-    
     
     // Checkpoint related
     public void ActivateCheckPoint(GameObject thisCheckPoint)
@@ -130,7 +192,7 @@ public class LevelManager : MonoBehaviour
             if (thisCheckPoint.name == checkPointsArray[i].name)
             {
                 checkPointIndex = i;
-                Debug.Log($"We Found the Index!, It's {i}");
+                // Debug.Log($"We Found the Index!, It's {i}");
             }
             // else
             // {
@@ -158,11 +220,11 @@ public class LevelManager : MonoBehaviour
             tempArray[i] = parentGameObject.transform.GetChild(i).gameObject;
         }
 
-        Debug.Log($"ChildrenCount: {childrenCount}");
-        foreach (GameObject child in tempArray)
-        {
-            Debug.Log(child.name);
-        }
+        // Debug.Log($"ChildrenCount: {childrenCount}");
+        // foreach (GameObject child in tempArray)
+        // {
+        //     Debug.Log(child.name);
+        // }
 
         return tempArray;
     }

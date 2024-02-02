@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Vector2 = System.Numerics.Vector2;
 
 public class PlayerController : MonoBehaviour
@@ -10,8 +11,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private float movementForce;
     [SerializeField] private float maxSpeed;
+    public float impulsiveForceMagnitude = 40f;
     
-    private int ablityAwakenIndex = 0;
+    public int abilityAwakenIndex = 0;
     
     // [SerializeField] private 
     
@@ -28,6 +30,42 @@ public class PlayerController : MonoBehaviour
     }
 
     private void FixedUpdate()
+    {
+        PlayerMovement();
+    }
+    
+    private void AblityAwaker()
+    {
+        if (abilityAwakenIndex <= 1)
+        {
+            // TODO: Add gravity here
+            // Bullets will find it. No need to implement here :)
+        }
+
+        if (abilityAwakenIndex <= 2)
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                StartCoroutine(ApplyElasticForce());
+            }
+        }
+    }
+
+    private IEnumerator ApplyElasticForce()
+    {
+        float originalBounciness = rb.sharedMaterial.bounciness;
+        rb.sharedMaterial.bounciness = 1.0f;
+
+        Vector3 forceDirection = rb.velocity.normalized;
+        rb.AddForce(forceDirection * impulsiveForceMagnitude, ForceMode2D.Impulse);
+
+        yield return new WaitForSeconds(1f);
+
+        rb.sharedMaterial.bounciness = originalBounciness;
+        LevelManager.instance.UpdateHP(1);
+    }
+    
+    private void PlayerMovement()
     {
         // Raw Input
         float moveHorizontal = Input.GetAxis("Horizontal");
@@ -50,27 +88,9 @@ public class PlayerController : MonoBehaviour
             }
             else
             {
-                Debug.Log($"Max speed reached, Player is no longer Accelerating, current speed is {rb.velocity}");
+                // Debug.Log($"Max speed reached, Player is no longer Accelerating, current speed is {rb.velocity}");
             }
         }
-    }
-
-    private void AblityAwaker()
-    {
-        if (ablityAwakenIndex <= 1)
-        {
-            // TODO: Add gravity here
-        }
-
-        if (ablityAwakenIndex <= 2)
-        {
-            // TODO: Add Bouncy here
-        }
-    }
-
-    private void PlayerMovement()
-    {
-        
     }
     
     

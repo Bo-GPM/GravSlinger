@@ -8,11 +8,15 @@ public class CoinController : MonoBehaviour
     public UnityEvent pickupCoin;
 
     [SerializeField] private int coinWorth;
+
     private void OnTriggerEnter2D(Collider2D other)
     {
-        pickupCoin.Invoke();
-        LevelManager.instance.AddCoins(coinWorth);
-        // Debug.Log("Collision Detected");
-        // LevelManager.instance.AddCoins(1000);
+        if (other.gameObject.CompareTag("Player"))
+        {
+            pickupCoin.Invoke();
+            LevelManager.instance.AddCoins(coinWorth);
+            // Debug.Log("Collision Detected");
+            // LevelManager.instance.AddCoins(1000);
+        }
     }
 }
